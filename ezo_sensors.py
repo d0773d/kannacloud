@@ -18,7 +18,10 @@ class Ezo:
         }
 
         self.ezo_sensor_values = {
-            "result": bytearray(24)
+            "result": bytearray(24),
+            "relative_humidity": None,
+            "dew_point": None,
+            "air_temperature": None
         }
 
         self.i2c = busio.I2C(board.SCL, board.SDA)
@@ -28,7 +31,7 @@ class Ezo:
 
     def cmd_set_name(self):
         cmd = "Name,hum1"
-
+        
         # Encode cmd variable to a bytearray
         cmd = cmd.encode()
 
@@ -41,14 +44,14 @@ class Ezo:
     def cmd_enable_all_paramaters(self):
         # Send O,Dew,1 command
         # Enables all the parameters
-
+        
         cmd = "O,Dew,1"
-
+        
         # Encode cmd variable to a bytearray
         cmd = cmd.encode()
 
         time.sleep(3)
-
+        
         # Set the result buffer with the Sensor data result
         with self.device:
             self.device.write(cmd)
@@ -84,12 +87,17 @@ class Ezo:
 
                 #remove \x00 from the end of the string
                 str_result = str_result.replace('\x00','')
+                
+                # Populate humidity sensor values
+                self.ezo_sensor_values["relative_humidity"] = str_result.split(',')[0]
+                self.ezo_sensor_values["air_temperature"] = str_result.split(',')[1]
+                self.ezo_sensor_values["dew_point"] = str_result.split(',')[3]
+
                 print(str_result)
+                print(self.ezo_sensor_values["relative_humidity"])
+                print(self.ezo_sensor_values["air_temperature"])
+                print(self.ezo_sensor_values["dew_point"])
             else:
                 # Output the response value if it is anything other than a 1
                 print("ERROR")
                 #print(str(response[0]))
-
-        '''if len(self.result) != 0:
-            self.env_temp = self.result.split(',')[1]
-            self.env_humidity = self.result.split(',')[0]'''
