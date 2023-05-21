@@ -30,10 +30,17 @@ class Ezo:
             "air_temperature": None
         }
 
-        #self.i2c = busio.I2C(board.SCL, board.SDA)
+    def cmd_set_phplock(self):
+        cmd = "Plock,1"
+        
+        # Encode cmd variable to a bytearray
+        cmd = cmd.encode()
 
-        # Create library object on our I2C port
-        #self.device = I2CDevice(self.i2c, i2c_addr)
+        time.sleep(3)
+
+        # Set the result buffer with the Sensor data result
+        with self.device:
+            self.device.write(cmd)
 
     def cmd_set_name(self):
         cmd = "Name,hum1"
@@ -109,5 +116,8 @@ class Ezo:
                 if self.ezo_sensor_settings["sensor_type"] == "tmp":
                     #print("Res Temp")
                     print("Reservoir Temperature: ", str_result)
+                    
+                if self.ezo_sensor_settings["sensor_type"] == "ph":
+                    print("pH Value: ", str_result)
             else:
                 print("ERROR")
