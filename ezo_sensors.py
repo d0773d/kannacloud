@@ -101,11 +101,13 @@ class Ezo:
                     self.ezo_sensor_values["air_temperature"] = str_result.split(',')[1]
                     self.ezo_sensor_values["dew_point"] = str_result.split(',')[3]
 
-                    print(str_result)
-                    print(self.ezo_sensor_values["relative_humidity"])
-                    print(self.ezo_sensor_values["air_temperature"])
-                    print(self.ezo_sensor_values["dew_point"])
+                    #print(str_result)
+                    print("Relative Humidity: ", self.ezo_sensor_values["relative_humidity"])
+                    print("Air Temperature: ", self.ezo_sensor_values["air_temperature"])
+                    print("Dew Point: ", self.ezo_sensor_values["dew_point"])
                 
                 if self.ezo_sensor_settings["sensor_type"] == "tmp":
-                    print("Res Temp")
-                    print(str_result)
+                    #print("Res Temp")
+                    print("Reservoir Temperature: ", str_result)
+            else:
+                print("ERROR")
