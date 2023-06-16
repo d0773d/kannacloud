@@ -7,7 +7,7 @@ import serial
 from multiprocessing import Process
 from ezo_sensors import Ezo
 
-ser = serial.Serial('/dev/ttyAMA3', 9600, timeout=1)
+ser = serial.Serial('/dev/ttyAMA1', 9600, timeout=1)
 
 # instantiate the objects
 res = Ezo(0x66, "tmp", False)
@@ -16,15 +16,10 @@ ph = Ezo(0x63, "ph", False)
 
 def monitor_nextion():
     while True:
-        time.sleep(3)
-        print("send UART")
-        buart=b'Hello World!'
-        ser.write(buart)
+        data = ser.readline()
+        print(data)
 
-        #data = ser.read()
-        #print(data)
-
-        '''if data is not None:
+        if data is not None:
             # convert bytearray to string
             data_string = ''.join([chr(b) for b in data])
 
@@ -47,7 +42,7 @@ def monitor_nextion():
             # from list
             substrings = list(set(substrings))
 
-            print("The command between <> : " + str(substrings))'''
+            print("The command between <> : " + str(substrings))
 
 def get_res_temp():
     while True:
@@ -70,6 +65,6 @@ ph_val = Process(target=get_ph)
 
 # Run the new process
 uart_monitor.start()
-#res_temp_val.start()
-#hum_val.start()
-#ph_val.start()
+res_temp_val.start()
+hum_val.start()
+ph_val.start()
