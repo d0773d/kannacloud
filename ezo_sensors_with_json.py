@@ -36,6 +36,7 @@ class Initialize:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
     def return_device_info():
+        json_data = []
         device_list = []
 
         while not i2c.try_lock():
@@ -72,7 +73,8 @@ class Initialize:
                         if checkEzo[0].endswith("?I"):
                             # yes - this is an EZO device
                             moduletype = checkEzo[1]
-                            print(moduletype)
+                            json_str = '{"type": ' +'"' + moduletype + '", "address": "' + str(device) + '"}'
+                            print(json_str)
 
                 
                     #print(raw_result)
