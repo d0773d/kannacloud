@@ -7,10 +7,10 @@ from adafruit_bus_device.i2c_device import I2CDevice
 i2c = busio.I2C(board.SCL, board.SDA)
 
 class Initialize:
-    def __init__():
+    def __init__(self):
         print("Initializing")
     
-    def init_status():
+    def init_status(self):
         # Opening JSON file
         with open('kc_settings.json', 'r') as f:
             # returns JSON object as 
@@ -22,7 +22,7 @@ class Initialize:
 
         return jason_data['settings'][0]['init']
 
-    def update_settings_file(key, value, subkey=None):
+    def update_settings_file(self, key, value, subkey=None):
         jsonFile = open("kc_settings.json", "r") # Open the JSON file for reading
         data = json.load(jsonFile) # Read the JSON into a buffer
         jsonFile.close() # Close the JSON file
@@ -35,7 +35,7 @@ class Initialize:
         with open('kc_settings.json', 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
-    def return_device_info():
+    def return_device_info(self):
         json_data = []
         device_list = []
 
@@ -74,6 +74,7 @@ class Initialize:
                             # yes - this is an EZO device
                             moduletype = checkEzo[1]
                             json_str = '{"type": ' +'"' + moduletype + '", "address": "' + str(device) + '"}'
+                            self.update_settings_file("sensors", json_str)
                             print(json_str)
 
                 
