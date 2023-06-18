@@ -35,7 +35,7 @@ class Initialize:
         with open('kc_settings.json', 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
-    def return_i2c_addresses():
+    def return_device_info():
         device_list = []
 
         while not i2c.try_lock():
@@ -50,7 +50,7 @@ class Initialize:
             i2c.unlock()
 
             for device in device_list:
-                print(device)
+                #print(device)
 
                 sensor = I2CDevice(i2c, device)
                 
@@ -65,9 +65,17 @@ class Initialize:
                 with sensor:
                     raw_result = bytearray(15)
                     sensor.readinto(raw_result)
+                    str_result = ''.join([chr(b) for b in raw_result])
+                    # check if the device is an EZO device
+                    checkEzo = str_result.split(",")
+                    if len(checkEzo) > 0:
+                        if checkEzo[0].endswith("?I"):
+                            # yes - this is an EZO device
+                            moduletype = checkEzo[1]
+                            print(moduletype)
 
                 
-                    print(raw_result)
+                    #print(raw_result)
 
 
 class Ezo:
