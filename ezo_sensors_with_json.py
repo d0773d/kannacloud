@@ -34,25 +34,41 @@ class Initialize:
 
         with open('kc_settings.json', 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
-        
-        #print(data[key][0])
 
-    def return_i2c_address():
+    def return_i2c_addresses():
+        device_list = []
+
         while not i2c.try_lock():
             pass
 
         try:
-            print(
-                "I2C addresses found:",
-                [hex(device_address) for device_address in i2c.scan()],
-            )
-            time.sleep(2)
-
-            for device_address in i2c.scan():
-                print(hex(device_address))
+            for device in i2c.scan():
+                device_list.append(device)
+                #print(hex(device_address))
 
         finally:  # unlock the i2c bus when ctrl-c'ing out of the loop
             i2c.unlock()
+
+            for device in device_list:
+                print(device)
+
+                sensor = I2CDevice(i2c, device)
+                
+                cmd = 'i'
+                cmd = cmd.encode()
+
+                with sensor:
+                    sensor.write(cmd)
+
+                time.sleep(.3)
+
+                with sensor:
+                    raw_result = bytearray(15)
+                    sensor.readinto(raw_result)
+
+                
+                    print(raw_result)
+
 
 class Ezo:
     # instance attribute
