@@ -24,19 +24,19 @@ class Initialize:
 
     def update_settings_file(self, key, value, subkey=None):
         jsonFile = open("kc_settings.json", "r") # Open the JSON file for reading
-        data = json.load(jsonFile) # Read the JSON into a buffer
+        settings_file = json.load(jsonFile) # Read the JSON into a buffer
         jsonFile.close() # Close the JSON file
 
         if subkey is not None:
-            data[key][0][subkey] = value
+            settings_file[key][0][subkey] = value
         else:
-            data[key].append(value)
+            settings_file[key].append(value)
 
         with open('kc_settings.json', 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
+            json.dump(settings_file, f, ensure_ascii=False, indent=4)
 
-    def return_device_info(self):
-        json_data = []
+    def initialize_devices(self):
+        #json_data = []
         device_list = []
 
         while not i2c.try_lock():
@@ -73,13 +73,19 @@ class Initialize:
                         if checkEzo[0].endswith("?I"):
                             # yes - this is an EZO device
                             moduletype = checkEzo[1]
-                            json_str = '{"type": ' +'"' + moduletype + '", "address": "' + str(device) + '"}'
-                            self.update_settings_file("sensors", json_str)
-                            print(json_str)
+                            '''json_data.append({
+                                "type": moduletype,
+                                "address": device
+                            })'''
 
-                
-                    #print(raw_result)
+                            json_str = '{"type": ' + '"' + moduletype + '", "address": ' + str(device) + '}'
+                            json_data = json.loads(json_str)
 
+                            self.update_settings_file("sensors", json_data)
+
+                            #print(json_data)
+            
+                            #print(json_str)
 
 class Ezo:
     # instance attribute
