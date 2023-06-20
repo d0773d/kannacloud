@@ -36,7 +36,7 @@ class Initialize:
             json.dump(settings_file, f, ensure_ascii=False, indent=4)
 
     def initialize_devices(self):
-        #json_data = []
+        json_data = []
         device_list = []
 
         while not i2c.try_lock():
@@ -79,32 +79,30 @@ class Initialize:
                             })'''
 
                             json_str = '{"type": ' + '"' + moduletype + '", "address": ' + str(device) + '}'
-                            json_data = json.loads(json_str)
+                            json_formated_data = json.loads(json_str)
+                            #json_data.append(json_formated_data)
 
-                            self.update_settings_file("sensors", json_data)
-
-                            #print(json_data)
-            
-                            #print(json_str)
+                            self.update_settings_file("sensors", json_formated_data)
 
 class Ezo:
     # instance attribute
     def __init__(
             self,
-            i2c_addr,
-            *sensor_list,
-            sensor_type, 
             seven_seg_output=False,
-            touch_scr_output=False
+            touch_scr_output=False,
+            i2c_addr=None,
+            sensor_type=None,
         ):
         #print(sensor_type)
         # Create library object on our I2C port
-        self.device = I2CDevice(i2c, i2c_addr)
+        #self.device = I2CDevice(i2c, i2c_addr)
+
+        self.i2c_addresses = []
 
         self.ezo_sensor_settings = {
             "device_address": i2c_addr,
             "sensor_type": sensor_type,
-            "short_wait": 5,
+            "short_wait": .3,
             "long_wait": 5,
             "largest_string": 24,
             "smallest_string": 4,
@@ -118,6 +116,29 @@ class Ezo:
             "dew_point": None,
             "air_temperature": None
         }
+
+    def get_sensor_addresses(self):
+        # Opening JSON file
+        with open('kc_settings.json', 'r') as f:
+            # returns JSON object as 
+            # a dictionary
+            json_dict = json.load(f)
+
+        # Closing file
+        f.close()
+
+        for sensors in json_dict["sensors"]:
+            self.i2c_addresses.append(sensors["address"])
+        
+        print(self.i2c_addresses)
+
+        #print(json_dict["sensors"][0]["address"])
+            #compare values under this key with your max_matches
+
+        #return json_data['settings'][0]['init']
+
+    def poll_sensors(self):
+        pass
 
     def cmd_r(self):
         # Send the R command
@@ -134,7 +155,7 @@ class Ezo:
             self.device.write(cmd)
 
         # EZO sensor needs a delay to calculate the result
-        time.sleep(self.ezo_sensor_settings["long_wait"])
+        time.sleep(self.ezo_sensor_settings["short_wait"])
 
         # Set the result buffer with the Sensor data result
         with self.device:
@@ -162,11 +183,11 @@ class Ezo:
                     print("Relative Humidity: ", self.ezo_sensor_values["relative_humidity"])
                     print("Air Temperature: ", self.ezo_sensor_values["air_temperature"])
                     print("Dew Point: ", self.ezo_sensor_values["dew_point"])
-                
+
                 if self.ezo_sensor_settings["sensor_type"] == "tmp":
                     #print("Res Temp")
                     print("Reservoir Temperature: ", str_result)
-                    
+   
                 if self.ezo_sensor_settings["sensor_type"] == "ph":
                     print("pH Value: ", str_result)
             else:
