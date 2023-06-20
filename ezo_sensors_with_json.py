@@ -9,14 +9,14 @@ i2c = busio.I2C(board.SCL, board.SDA)
 class Initialize:
     def __init__(self):
         print("Initializing")
-    
+
     def init_status(self):
         # Opening JSON file
         with open('kc_settings.json', 'r') as f:
             # returns JSON object as 
             # a dictionary
             jason_data = json.load(f)
-        
+ 
         # Closing file
         f.close()
 
@@ -102,7 +102,7 @@ class Ezo:
         self.ezo_sensor_settings = {
             "device_address": i2c_addr,
             "sensor_type": sensor_type,
-            "short_wait": .3,
+            "short_wait": .8,
             "long_wait": 5,
             "largest_string": 24,
             "smallest_string": 4,
@@ -117,7 +117,7 @@ class Ezo:
             "air_temperature": None
         }
 
-    def get_sensor_addresses(self):
+    def get_sensor_types_addresses(self):
         # Opening JSON file
         with open('kc_settings.json', 'r') as f:
             # returns JSON object as 
@@ -127,20 +127,20 @@ class Ezo:
         # Closing file
         f.close()
 
-        for sensors in json_dict["sensors"]:
+        return json_dict["sensors"]
+
+        '''for sensors in json_dict["sensors"]:
             self.i2c_addresses.append(sensors["address"])
-        
-        print(self.i2c_addresses)
+        return self.i2c_addresses'''
 
-        #print(json_dict["sensors"][0]["address"])
-            #compare values under this key with your max_matches
+    def poll_sensors(self, sensors):
+        for i in sensors:
+            self.cmd_r(i["type"], i["address"])
 
-        #return json_data['settings'][0]['init']
+    def cmd_r(self, sensor_type, i2c_addr):
+        # Create library object on our I2C port
+        self.device = I2CDevice(i2c, i2c_addr)
 
-    def poll_sensors(self):
-        pass
-
-    def cmd_r(self):
         # Send the R command
 
         cmd = "R"
@@ -173,7 +173,7 @@ class Ezo:
                 #remove \x00 from the end of the string
                 str_result = str_result.replace('\x00','')
 
-                if self.ezo_sensor_settings["sensor_type"] == "hum":
+                if sensor_type == "HUM":
                     # Populate humidity sensor values
                     self.ezo_sensor_values["relative_humidity"] = str_result.split(',')[0]
                     self.ezo_sensor_values["air_temperature"] = str_result.split(',')[1]
@@ -184,11 +184,11 @@ class Ezo:
                     print("Air Temperature: ", self.ezo_sensor_values["air_temperature"])
                     print("Dew Point: ", self.ezo_sensor_values["dew_point"])
 
-                if self.ezo_sensor_settings["sensor_type"] == "tmp":
+                if sensor_type == "RTD":
                     #print("Res Temp")
                     print("Reservoir Temperature: ", str_result)
    
-                if self.ezo_sensor_settings["sensor_type"] == "ph":
+                if sensor_type == "pH":
                     print("pH Value: ", str_result)
             else:
                 print("ERROR")
