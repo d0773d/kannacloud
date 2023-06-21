@@ -3,95 +3,33 @@ import board
 import busio
 import time
 
-from ezo_sensors import Ezo
+from multiprocessing import Process
 
-uart = busio.UART(board.TX, board.RX, baudrate=9600)
+from ezo_sensors import Initialize, Ezo
+from nextion import Nextion
 
 # instantiate the objects
-res = Ezo(0x66, "tmp", False)
-humidity = Ezo(0x6F, "hum", False)
-ph = Ezo(0x63, "ph", False)
+init = Initialize()
+nextion = Nextion()
+ezo = Ezo()
 
-async def get_res_temp():
+def monitor_nextion():
     while True:
-        res.cmd_r()
+        nextion.monitor_nextion()
 
-        # allow other tasks to do work
-        await asyncio.sleep(0)
-
-async def get_hum():
+def poll_sensors():
     while True:
-        humidity.cmd_r()
+        ezo.poll_sensors(ezo.get_sensor_types_addresses())
 
-        # allow other tasks to do work
-        await asyncio.sleep(0)
+if init.init_status() is False:
+    init.initialize_devices()
+else:
+    print("Initialize: ", True)
 
-async def get_ph():
-    while True:
-        ph.cmd_r()
+    # Create a new process with a specified function to execute.
+    uart_monitor = Process(target=monitor_nextion)
+    poll_sensors = Process(target=poll_sensors)
 
-        # allow other tasks to do work
-        await asyncio.sleep(0)
-
-async def monitor_uart():
-    while True:
-        data = uart.read(32)  # read up to 32 bytes
-
-        print(data)
-
-        if data is not None:
-            # convert bytearray to string
-            data_string = ''.join([chr(b) for b in data])
-
-            substrings = []
-            in_brackets = False
-            current_substring = ""
-
-            for c in data_string:
-                if c == "<":
-                    in_brackets = True
-                elif c == ">" and in_brackets:
-                    substrings.append(current_substring)
-                    current_substring = ""
-                    in_brackets = False
-                elif in_brackets:
-                    current_substring += c
-
-            if current_substring:
-                substrings.append(current_substring)
-
-            # using set()
-            # to remove duplicate commands
-            # from list
-            substrings = list(set(substrings))
-            
-            print("The element between <> : " + str(substrings))
-
-        # allow other tasks to do work
-        await asyncio.sleep(0)
-
-# main coroutine
-async def main():  # Don't forget the async!
-    # create uart task
-    uart_task = asyncio.create_task(
-        monitor_uart()
-    )
-
-    # create sensor tasks
-    res_temp_task = asyncio.create_task(
-        get_res_temp()
-    )
-    hum_task = asyncio.create_task(
-        get_hum()
-    )
-    ph_task = asyncio.create_task(
-        get_ph()
-    )
-
-    # start all of the tasks
-    await asyncio.gather(
-        uart_task, res_temp_task, hum_task, ph_task
-    )  # Don't forget the await!
-
-# start the main coroutine
-asyncio.run(main())
+    # Run the new process
+    uart_monitor.start()
+    poll_sensors.start()
