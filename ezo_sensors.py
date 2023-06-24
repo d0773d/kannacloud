@@ -35,6 +35,8 @@ class Initialize:
         with open('kc_settings.json', 'w', encoding='utf-8') as f:
             json.dump(settings_file, f, ensure_ascii=False, indent=4)
 
+        f.close() # Close the JSON file
+
     def initialize_devices(self):
         json_data = []
         device_list = []
@@ -45,14 +47,12 @@ class Initialize:
         try:
             for device in i2c.scan():
                 device_list.append(device)
-                #print(hex(device_address))
 
         finally:  # unlock the i2c bus when ctrl-c'ing out of the loop
             i2c.unlock()
 
             for device in device_list:
-                #print(device)
-
+       
                 sensor = I2CDevice(i2c, device)
                 
                 cmd = 'i'
@@ -73,14 +73,9 @@ class Initialize:
                         if checkEzo[0].endswith("?I"):
                             # yes - this is an EZO device
                             moduletype = checkEzo[1]
-                            '''json_data.append({
-                                "type": moduletype,
-                                "address": device
-                            })'''
 
                             json_str = '{"type": ' + '"' + moduletype + '", "address": ' + str(device) + '}'
                             json_formated_data = json.loads(json_str)
-                            #json_data.append(json_formated_data)
 
                             self.update_settings_file("sensors", json_formated_data)
 
@@ -93,9 +88,6 @@ class Ezo:
             i2c_addr=None,
             sensor_type=None,
         ):
-        #print(sensor_type)
-        # Create library object on our I2C port
-        #self.device = I2CDevice(i2c, i2c_addr)
 
         self.i2c_addresses = []
 
