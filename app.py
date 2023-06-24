@@ -12,19 +12,13 @@ from nextion import Nextion
 # function executed in child process
 def monitor_nextion(custom):
     while True:
-        time.sleep(2)
-        print("loop_sensors is", loop_sensors)
-        if loop_sensors:
-            nextion.monitor_nextion()
+        time.sleep(1)
+        nextion.monitor_nextion()
 
 def poll_sensors(custom):
     while True:
         time.sleep(1)
-        print("READY: ", loop_sensors)
-        print(loop_sensors)
-
-        if loop_sensors:
-            ezo.poll_sensors(ezo.get_sensor_types_addresses())
+        ezo.poll_sensors(ezo.get_sensor_types_addresses())
 
 if __name__ == '__main__':
     loop_sensors = False
@@ -38,7 +32,7 @@ if __name__ == '__main__':
     if not init.init_status():
         init.initialize_devices()
         time.sleep(2)
-        
+
         init.update_settings_file("settings", True, "init")
 
     if init.init_status():
