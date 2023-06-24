@@ -1,30 +1,74 @@
+import asyncio
 import board
 import busio
 import time
 
-from ezo_sensors import Ezo
+from multiprocessing import Process
+from multiprocessing import Value
 
-class App:
-    def __init__(self, i2c, seven_seg_output=False, touch_scr_output=False):
-        self.ezohum = Ezo(i2c, 0x6F)
-        self.seven_seg_output = seven_seg_output
-        if seven_seg_output:
-            from adafruit_ht16k33.segments import Seg7x4
-            #self.temp_display = Seg7x4(self.i2c, address=0x71)
-            self.humidity_display = Seg7x4(self.i2c, address=0x72)
-        self.res_temp = None
-        self.res_ph = None
-        self.res_ec = None
+from ezo_sensors import Initialize, Ezo
+from nextion import Nextion
+    
+# function executed in child process
+def monitor_nextion(custom):
+    while True:
+        time.sleep(2)
+        print("loop_sensors is", loop_sensors)
+        if loop_sensors:
+            nextion.monitor_nextion()
 
-    def send_result_to_7seg(self):
-        print(len(self.ezohum.humidity))
-        #self.humidity_display.print('0123')
-        #self.temp_display.print(self.ezohum.temperature)
-        self.humidity_display.print(self.ezohum.humidity)
+def poll_sensors(custom):
+    while True:
+        time.sleep(1)
+        print("READY: ", loop_sensors)
+        print(loop_sensors)
 
-    def cmd_r(self):
-        # retrieve the EZO-HUM data
-        self.ezohum.update_data()
-        # update the displays
-        if self.seven_seg_output:
-            self.send_result_to_7seg()
+        if loop_sensors:
+            ezo.poll_sensors(ezo.get_sensor_types_addresses())
+
+if __name__ == '__main__':
+    loop_sensors = False
+
+    device_dict = []
+
+    init = Initialize()
+    nextion = Nextion()
+    ezo = Ezo()
+
+    if not init.init_status():
+        init.initialize_devices()
+        time.sleep(2)
+        
+        init.update_settings_file("settings", True, "init")
+
+    if init.init_status():
+        print("Initialize: ", True)
+
+        loop_sensors = True
+
+        device_dict = ezo.get_sensor_types_addresses()
+
+        # configure a child process to run the task
+        uart_monitor = Process(target=monitor_nextion, args=(loop_sensors,))
+
+        poll_sensors = Process(target=poll_sensors, args=(loop_sensors,))
+
+        uart_monitor.start()
+        #poll_sensors.start()
+
+    while True:
+        time.sleep(10)
+        print("While loop!!!!!!!!")
+        loop_sensors = False
+
+        if not loop_sensors:
+            uart_monitor.terminate()
+            uart_monitor.join()
+
+        loop_sensors = True
+
+        time.sleep(10)
+
+        if loop_sensors:
+            uart_monitor = Process(target=monitor_nextion, args=(loop_sensors,))
+            uart_monitor.start()
