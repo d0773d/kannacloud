@@ -10,15 +10,15 @@ from ezo_sensors import Initialize, Ezo
 from nextion import Nextion
     
 # function executed in child process
-def monitor_nextion(custom):
+def monitor_nextion():
     while True:
         time.sleep(1)
         nextion.monitor_nextion()
 
-def poll_sensors(custom):
+def poll_sensors(devices):
     while True:
         time.sleep(1)
-        ezo.poll_sensors(ezo.get_sensor_types_addresses())
+        ezo.poll_sensors(devices)
 
 if __name__ == '__main__':
     loop_sensors = False
@@ -38,17 +38,14 @@ if __name__ == '__main__':
     if init.init_status():
         print("Initialize: ", True)
 
-        loop_sensors = True
-
         device_dict = ezo.get_sensor_types_addresses()
 
         # configure a child process to run the task
-        uart_monitor = Process(target=monitor_nextion, args=(loop_sensors,))
-
-        poll_sensors = Process(target=poll_sensors, args=(loop_sensors,))
+        uart_monitor = Process(target=monitor_nextion)
+        sensors = Process(target=poll_sensors, args=(device_dict,))
 
         uart_monitor.start()
-        #poll_sensors.start()
+        sensors.start()
 
     while True:
         time.sleep(10)
@@ -57,12 +54,18 @@ if __name__ == '__main__':
 
         if not loop_sensors:
             uart_monitor.terminate()
+            sensors.terminate()
+
             uart_monitor.join()
+            sensors.join()
 
         loop_sensors = True
 
         time.sleep(10)
 
         if loop_sensors:
-            uart_monitor = Process(target=monitor_nextion, args=(loop_sensors,))
+            uart_monitor = Process(target=monitor_nextion)
+            sensors = Process(target=poll_sensors, args=(device_dict,))
+
             uart_monitor.start()
+            sensors.start()
