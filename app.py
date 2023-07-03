@@ -25,6 +25,8 @@ if __name__ == '__main__':
 
     device_dict = []
 
+    cmd_dict = []
+
     init = Initialize()
     nextion = Nextion()
     ezo = Ezo()
@@ -41,16 +43,27 @@ if __name__ == '__main__':
         device_dict = ezo.get_sensor_types_addresses()
 
         # configure a child process to run the task
-        uart_monitor = Process(target=monitor_nextion)
+        #uart_monitor = Process(target=monitor_nextion)
         sensors = Process(target=poll_sensors, args=(device_dict,))
 
-        uart_monitor.start()
+        #uart_monitor.start()
         sensors.start()
 
     while True:
-        time.sleep(10)
-        print("While loop!!!!!!!!")
-        loop_sensors = False
+        for item in nextion.monitor_nextion():
+            if item == 'cmd1':
+                print("command found!")
+                
+                sensors.terminate()
+                sensors.join()
+
+            if item == 'cmd2':
+                print("command found!")
+                
+                sensors = Process(target=poll_sensors, args=(device_dict,))
+                sensors.start()
+
+        '''loop_sensors = False
 
         if not loop_sensors:
             uart_monitor.terminate()
@@ -68,4 +81,4 @@ if __name__ == '__main__':
             sensors = Process(target=poll_sensors, args=(device_dict,))
 
             uart_monitor.start()
-            sensors.start()
+            sensors.start()'''
