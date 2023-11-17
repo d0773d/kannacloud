@@ -31,12 +31,12 @@ class Initialize:
         with open('/home/pi/code/python/kc_settings.json', 'r') as f:
             # returns JSON object as 
             # a dictionary
-            jason_data = json.load(f)
+            json_data = json.load(f)
  
         # Closing file
         f.close()
 
-        return jason_data['settings'][0]['init']
+        return json_data['settings'][0]['init']
 
     def update_settings_file(self, key, value, subkey=None):
         jsonFile = open("/home/pi/code/python/kc_settings.json", "r") # Open the JSON file for reading
