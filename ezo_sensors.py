@@ -10,9 +10,25 @@ class Initialize:
     def __init__(self):
         print("Initializing")
 
+    def get_triggers_and_actions(self):
+        # Opening JSON file
+        with open('/home/pi/code/python/kc_settings.json', 'r') as f:
+            # returns JSON object as 
+            # a dictionary
+            json_data = json.load(f)
+ 
+        # Closing file
+        f.close()
+
+        # Check for triggers in json_data and if triggers is not empty
+        if "triggers" in json_data and len(json_data['triggers']) is not 0:
+            print('triggers data: ', json_data['triggers'])
+        else:
+            print("Triggers wasn't found")
+
     def init_status(self):
         # Opening JSON file
-        with open('kc_settings.json', 'r') as f:
+        with open('/home/pi/code/python/kc_settings.json', 'r') as f:
             # returns JSON object as 
             # a dictionary
             jason_data = json.load(f)
@@ -23,7 +39,7 @@ class Initialize:
         return jason_data['settings'][0]['init']
 
     def update_settings_file(self, key, value, subkey=None):
-        jsonFile = open("kc_settings.json", "r") # Open the JSON file for reading
+        jsonFile = open("/home/pi/code/python/kc_settings.json", "r") # Open the JSON file for reading
         settings_file = json.load(jsonFile) # Read the JSON into a buffer
         jsonFile.close() # Close the JSON file
 
@@ -32,12 +48,13 @@ class Initialize:
         else:
             settings_file[key].append(value)
 
-        with open('kc_settings.json', 'w', encoding='utf-8') as f:
+        with open('/home/pi/code/python/kc_settings.json', 'w', encoding='utf-8') as f:
             json.dump(settings_file, f, ensure_ascii=False, indent=4)
 
         f.close() # Close the JSON file
 
     def initialize_devices(self):
+        print("Getting Sensor info")
         json_data = []
         device_list = []
 
@@ -79,6 +96,8 @@ class Initialize:
 
                             self.update_settings_file("sensors", json_formated_data)
 
+            self.update_settings_file("settings", True, "init")
+
 class Ezo:
     # instance attribute
     def __init__(
@@ -89,7 +108,7 @@ class Ezo:
             sensor_type=None,
         ):
 
-        self.i2c_addresses = []
+        self.device_dict = []
 
         self.ezo_sensor_settings = {
             "device_address": i2c_addr,
@@ -111,7 +130,7 @@ class Ezo:
 
     def get_sensor_types_addresses(self):
         # Opening JSON file
-        with open('kc_settings.json', 'r') as f:
+        with open('/home/pi/code/python/kc_settings.json', 'r') as f:
             # returns JSON object as 
             # a dictionary
             json_dict = json.load(f)
@@ -120,10 +139,6 @@ class Ezo:
         f.close()
 
         return json_dict["sensors"]
-
-        '''for sensors in json_dict["sensors"]:
-            self.i2c_addresses.append(sensors["address"])
-        return self.i2c_addresses'''
 
     def poll_sensors(self, sensors):
         for i in sensors:
