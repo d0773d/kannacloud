@@ -1,0 +1,59 @@
+{
+    "settings": [
+        {
+            "vs": "1.0",
+            "init": true,
+            "ready": false
+        }
+    ],
+    "sensors": [
+        {
+            "type": "pH",
+            "address": 99
+        },
+        {
+            "type": "RTD",
+            "address": 102
+        },
+        {
+            "type": "HUM",
+            "address": 111
+        }
+    ],
+    "triggers": [
+        {
+            "pH": [
+                {
+                    "value": 5.5,
+                    "action_name": "ph_value_5.5"
+                },
+                {
+                    "value": 5.8,
+                    "action_name": "ph_value_5.8"
+                }           
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "ph_value_5.5": [
+                {
+                    "relay": {
+                        "type": "i2c",
+                        "i2c_address": 99,
+                        "toggle_on": true
+                    }
+                }
+            ],
+            "ph_value_5.8": [
+                {
+                    "relay": {
+                        "type": "i2c",
+                        "i2c_address": 99,
+                        "toggle_on": false
+                    }
+                }
+            ]
+        }
+    ]
+}
