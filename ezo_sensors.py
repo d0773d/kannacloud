@@ -12,7 +12,7 @@ class Initialize:
 
     def get_triggers_and_actions(self):
         # Opening JSON file
-        with open('/home/pi/code/python/kc_settings.json', 'r') as f:
+        with open('/home/pi/code/python/triggers_actions.json', 'r') as f:
             # returns JSON object as 
             # a dictionary
             json_data = json.load(f)
@@ -20,27 +20,9 @@ class Initialize:
         # Closing file
         f.close()
 
-        triggers_actions = []
-
-        #triggers_actions = triggers | actions
-
-        # Check for triggers in json_data and if triggers is not empty
-        if "triggers" in json_data and len(json_data['triggers']) != 0:
-            #print('triggers data: ', json_data['triggers'])
-
-            triggers_actions.extend(json_data['triggers'])
-
-            #print(triggers_actions)
-        else:
-            print("Triggers wasn't found")
-
-        # Check for actions in json_data and if actions is not empty
-        if "actions" in json_data and len(json_data['actions']) != 0:
-            triggers_actions.extend(json_data['actions'])
-            #print('actions data: ', json_data['actions'])
-            print(triggers_actions)
-        else:
-            print("Actions wasn't found")
+        if all(key in json_data for key in ("triggers", "actions")):
+            if len(json_data["triggers"]) and len(json_data["actions"]) != 0:
+                print("Triggers and Actions are found")
 
     def init_status(self):
         # Opening JSON file
