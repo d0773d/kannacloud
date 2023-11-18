@@ -20,11 +20,27 @@ class Initialize:
         # Closing file
         f.close()
 
+        triggers_actions = []
+
+        #triggers_actions = triggers | actions
+
         # Check for triggers in json_data and if triggers is not empty
-        if "triggers" in json_data and len(json_data['triggers']) is not 0:
-            print('triggers data: ', json_data['triggers'])
+        if "triggers" in json_data and len(json_data['triggers']) != 0:
+            #print('triggers data: ', json_data['triggers'])
+
+            triggers_actions.extend(json_data['triggers'])
+
+            #print(triggers_actions)
         else:
             print("Triggers wasn't found")
+
+        # Check for actions in json_data and if actions is not empty
+        if "actions" in json_data and len(json_data['actions']) != 0:
+            triggers_actions.extend(json_data['actions'])
+            #print('actions data: ', json_data['actions'])
+            print(triggers_actions)
+        else:
+            print("Actions wasn't found")
 
     def init_status(self):
         # Opening JSON file
