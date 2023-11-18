@@ -22,7 +22,8 @@ class Initialize:
 
         if all(key in json_data for key in ("triggers", "actions")):
             if len(json_data["triggers"]) and len(json_data["actions"]) != 0:
-                print("Triggers and Actions are found")
+                #print("Triggers and Actions are found")
+                return json_data
 
     def init_status(self):
         # Opening JSON file
