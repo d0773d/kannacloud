@@ -1,4 +1,4 @@
-import asyncio
+]import asyncio
 import board
 import busio
 import time
@@ -21,27 +21,24 @@ def monitor_nextion():
         nextion.monitor_nextion()
 
 def poll_sensors(triggers_actions):
-    # Given sensor type and value
-    given_sensor_type = "RTD"  # Replace with the sensor type you're looking for
-    given_value = 79  # Replace with the value you're looking for
-
-    # Find the corresponding action name
-    action_name = None
+    # Create a dictionary dynamically based on sensor type
+    sensor_dict = {}
 
     # Iterate through triggers
     for trigger in triggers_actions['triggers']:
-        if given_sensor_type in trigger:
-            for trigger_info in trigger[given_sensor_type]:
-                if trigger_info['value'] == given_value:
-                    action_name = trigger_info['action_name']
-                    break
+        for sensor_type, triggers_list in trigger.items():
+            for trigger_info in triggers_list:
+                action_name = trigger_info['action_name']
+                value = trigger_info['value']
+                
+                # Create dictionary dynamically based on sensor type
+                if sensor_type not in sensor_dict:
+                    sensor_dict[sensor_type] = {}
+                
+                sensor_dict[sensor_type][value] = action_name
 
-    # Print the result
-    if action_name is not None:
-        print(f"Action Name for {given_sensor_type} value {given_value}: {action_name}")
-    else:
-        print(f"No action found for {given_sensor_type} value {given_value}")
-
+    # Print the created dictionary
+    print("Sensor Dictionary:", sensor_dict)
     while True:
         print()
         #print(triggers_actions["triggers"]["pH"])
