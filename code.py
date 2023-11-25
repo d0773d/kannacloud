@@ -52,6 +52,11 @@ def poll_sensors(triggers_actions):
     print()
     print(action_dict)
 
+    while True:
+        print()
+        #print(triggers_actions["triggers"]["pH"])
+        ezo.poll_sensors(ezo.get_sensor_types_addresses())
+
 triggers_actions = init.get_triggers_and_actions()
 
 if init.init_status() is False:
