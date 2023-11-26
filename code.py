@@ -52,8 +52,19 @@ def poll_sensors(triggers_actions):
                 action_name_to_execute = trigger_info['action_name']
                 action_to_execute = action_dict[action_name_to_execute]
                 
-                print(f"Executing action for sensor type '{sensor_type_to_check}', value '{sensor_value_to_check}':")
-                print(action_to_execute)
+                '''print(f"Executing action for sensor type '{sensor_type_to_check}', value '{sensor_value_to_check}':")
+                print(action_to_execute)'''
+
+                #print(action_dict[action_name_to_execute])
+            
+        # Check if relay exists in the action_dict
+        if action_name_to_execute in action_dict and 'relay' in action_dict[action_name_to_execute][0]:
+            action_to_execute = action_dict[action_name_to_execute][0]['relay']
+                
+            print(f"Executing action for sensor type '{sensor_type_to_check}', value '{sensor_value_to_check}':")
+            print(action_to_execute)
+        else:
+            print(f"No relay found for action '{action_name_to_execute}'")
 
     while True:
         print()
