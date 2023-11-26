@@ -41,16 +41,19 @@ def poll_sensors(triggers_actions):
                 # Create dictionary for action
                 action_dict[action_name] = parsed_data['actions'][0][action_name]
 
-    '''# Print the created dictionaries
-    print("Sensor Types Dictionary:", sensor_types_dict)
-    print("\nAction Dictionary:")
-    for action_name, actions in action_dict.items():
-        print(f"{action_name}: {actions}")'''
+    # Specify the sensor type and sensor value to check
+    sensor_type_to_check = 'pH'
+    sensor_value_to_check = 5.5
 
-
-    print(sensor_types_dict)
-    print()
-    print(action_dict)
+    # Check if the sensor value for the given sensor type is in the trigger and execute the corresponding action
+    if sensor_type_to_check in parsed_data['triggers'][0]:
+        for trigger_info in parsed_data['triggers'][0][sensor_type_to_check]:
+            if trigger_info['value'] == sensor_value_to_check:
+                action_name_to_execute = trigger_info['action_name']
+                action_to_execute = action_dict[action_name_to_execute]
+                
+                print(f"Executing action for sensor type '{sensor_type_to_check}', value '{sensor_value_to_check}':")
+                print(action_to_execute)
 
     while True:
         print()
