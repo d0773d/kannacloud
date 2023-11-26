@@ -57,21 +57,28 @@ def poll_sensors(triggers_actions):
 
                 #print(action_dict[action_name_to_execute])
             
-        # Check if relay exists in the action_dict
-        if action_name_to_execute in action_dict and 'relay' in action_dict[action_name_to_execute][0]:
-            action_to_execute = action_dict[action_name_to_execute][0]['relay']
-                
-            print(f"Executing action for sensor type '{sensor_type_to_check}', value '{sensor_value_to_check}':")
-            print(action_to_execute)
-        else:
-            print(f"No relay found for action '{action_name_to_execute}'")
+                # Check if relay exists in the action_dict
+                if action_name_to_execute in action_dict and 'relay' in action_dict[action_name_to_execute][0]:
+                    action_to_execute = action_dict[action_name_to_execute][0]['relay']
+                        
+                    print(f"Executing action for sensor type '{sensor_type_to_check}', value '{sensor_value_to_check}':")
+                    print(action_to_execute)
+                else:
+                    print(f"No relay found for action '{action_name_to_execute}'")
+
+                # Check if print_debug exists in the action_dict
+                if action_name_to_execute in action_dict and 'print_debug' in action_dict[action_name_to_execute][0]:
+                    action_to_execute = action_dict[action_name_to_execute][0]['print_debug']
+                        
+                    #print(f"Executing action for sensor type '{sensor_type_to_check}', value '{sensor_value_to_check}':")
+                    print(action_to_execute['message'])
 
     while True:
         print()
         #print(triggers_actions["triggers"]["pH"])
         ezo.poll_sensors(ezo.get_sensor_types_addresses())
 
-triggers_actions = init.get_triggers_and_actions()
+triggers_actions = ezo.get_triggers_and_actions()
 
 if init.init_status() is False:
     print("Grab Sensors and Sensor Settings")
