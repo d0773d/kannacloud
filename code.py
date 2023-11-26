@@ -51,11 +51,6 @@ def poll_sensors(triggers_actions):
             if trigger_info['value'] == sensor_value_to_check:
                 action_name_to_execute = trigger_info['action_name']
                 action_to_execute = action_dict[action_name_to_execute]
-                
-                '''print(f"Executing action for sensor type '{sensor_type_to_check}', value '{sensor_value_to_check}':")
-                print(action_to_execute)'''
-
-                #print(action_dict[action_name_to_execute])
             
                 # Check if relay exists in the action_dict
                 if action_name_to_execute in action_dict and 'relay' in action_dict[action_name_to_execute][0]:
@@ -76,15 +71,16 @@ def poll_sensors(triggers_actions):
     while True:
         print()
         #print(triggers_actions["triggers"]["pH"])
-        ezo.poll_sensors(ezo.get_sensor_types_addresses())
-
-triggers_actions = ezo.get_triggers_and_actions()
+        ezo.poll_sensors(poll_sensor_list)
 
 if init.init_status() is False:
     print("Grab Sensors and Sensor Settings")
     init.initialize_devices()
 else:
     print("Initialize: ", True)
+
+triggers_actions = ezo.get_triggers_and_actions()
+poll_sensor_list = ezo.get_sensor_types_addresses()
 
 # Create a new process with a specified function to execute.
 uart_monitor = Process(target=monitor_nextion)
