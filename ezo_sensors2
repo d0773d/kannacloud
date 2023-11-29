@@ -130,7 +130,12 @@ class Ezo:
         else:
             return None
             
-    def triggers_actions(self, triggers_actions, sensor_type, sensor_value):
+    def run_triggers_actions(self, triggers_actions, sensor_type, sensor_value):
+        #print(triggers_actions)
+        #print("Sensor Type: ", sensor_type, "Sensor Value: ", sensor_value)
+        
+        print()
+        #print(triggers_actions)
         # Load JSON data
         parsed_data = triggers_actions
 
@@ -156,7 +161,10 @@ class Ezo:
         #sensor_value_to_check = 5.5
 
         sensor_type_to_check = sensor_type
-        sensor_value_to_check = sensor_value
+        #convert sensor_value to a float so you can check the float sensor value in triggers_actions.json file
+        sensor_value_to_check = float(sensor_value)
+
+        print("sensor_type_to_check: ", sensor_type, "sensor_value_to_check: ", sensor_value)
 
         # Check if the sensor value for the given sensor type is in the trigger and execute the corresponding action
         if sensor_type_to_check in parsed_data['triggers'][0]:
@@ -194,7 +202,9 @@ class Ezo:
         return json_dict["sensors"]
 
     def poll_sensors(self, sensors, triggers_actions = None):
+        #print(sensors)
         for i in sensors:
+            #print(i["type"], "   ", i["address"])
             self.cmd_r(i["type"], i["address"], triggers_actions)
 
     def cmd_r(self, sensor_type, i2c_addr, triggers_actions = None):
@@ -248,9 +258,21 @@ class Ezo:
 
                 if sensor_type == "RTD":
                     #print("Res Temp")
+                    str_result = "{:.1f}".format(float(str_result))
                     print("Reservoir Temperature: ", str_result)
+
+                    print("RTD Value: ", str_result)
+                    
+                    #test the triggers_actions function
+                    self.run_triggers_actions(triggers_actions, sensor_type, str_result)
    
                 if sensor_type == "pH":
+                    # Converting var1 to a float and formatting it to one decimal point, then creating var2
+                    str_result = str_result[:-2]
+                    #print("Converted value:", var2)
                     print("pH Value: ", str_result)
+                    
+                    #test the triggers_actions function
+                    self.run_triggers_actions(triggers_actions, sensor_type, str_result)
             else:
                 print("ERROR")
