@@ -132,9 +132,7 @@ class Ezo:
             
     def run_triggers_actions(self, triggers_actions, sensor_type, sensor_value):
         current_sensor_type_value = sensor_type
-        print("function run_triggers_actions atribute sensor_type value: ", sensor_type)
-        
-        #print("sensor_type_to_check: ", sensor_type, "sensor_value_to_check: ", sensor_value)
+
         # Load JSON data
         parsed_data = triggers_actions
         
@@ -161,12 +159,8 @@ class Ezo:
 
         sensor_type_to_check = current_sensor_type_value
 
-        
-
         #convert sensor_value to a float so you can check the float sensor value in triggers_actions.json file
         sensor_value_to_check = float(sensor_value)
-
-        #print("sensor_type_to_check: ", sensor_type, "sensor_value_to_check: ", sensor_value)
 
         # Check if the sensor value for the given sensor type is in the trigger and execute the corresponding action
         if sensor_type_to_check in parsed_data['triggers'][0]:
@@ -187,8 +181,7 @@ class Ezo:
                     # Check if print_debug exists in the action_dict
                     if action_name_to_execute in action_dict and 'print_debug' in action_dict[action_name_to_execute][0]:
                         action_to_execute = action_dict[action_name_to_execute][0]['print_debug']
-                            
-                        #print(f"Executing action for sensor type '{sensor_type_to_check}', value '{sensor_value_to_check}':")
+
                         print(action_to_execute['message'])
 
     def get_sensor_types_addresses(self):
@@ -209,7 +202,6 @@ class Ezo:
             time.sleep(3)
 
     def cmd_r(self, sensor_type, i2c_addr, triggers_actions = None):
-        print("function cmd_r sensor_type atribute value: ", sensor_type)
 
         # Create library object on our I2C port
         self.device = I2CDevice(i2c, i2c_addr)
@@ -247,8 +239,7 @@ class Ezo:
                 str_result = str_result.replace('\x00','')
 
                 if sensor_type == "pH":
-                    print("Sensor type in pH check: ", sensor_type)
-                    # Converting var1 to a float and formatting it to one decimal point, then creating var2
+                    # Converting str_result to a float and formatting it to one decimal point, then set the str_result var to str_result
                     str_result = "{:.1f}".format(float(str_result))
 
                     print("pH Value: ", str_result)
@@ -258,7 +249,6 @@ class Ezo:
                     print()
 
                 if sensor_type == "HUM":
-                    print("Sensor type in HUM check: ", sensor_type)
                     # Populate humidity sensor values
                     self.ezo_sensor_values["relative_humidity"] = str_result.split(',')[0]
                     self.ezo_sensor_values["air_temperature"] = str_result.split(',')[1]
@@ -270,7 +260,6 @@ class Ezo:
                     print()
 
                 if sensor_type == "RTD":
-                    print("Sensor type in RTD check: ", sensor_type)
                     str_result = "{:.1f}".format(float(str_result))
                     print("Reservoir Temperature: ", str_result)
                     
