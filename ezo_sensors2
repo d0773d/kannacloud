@@ -93,7 +93,7 @@ class Ezo:
         ):
 
         self.device_dict = []
-        self.triggers_actions = self.get_triggers_and_actions()
+        #self.triggers_actions = self.get_triggers_and_actions()
 
         self.ezo_sensor_settings = {
             "device_address": i2c_addr,
@@ -131,21 +131,20 @@ class Ezo:
             return None
             
     def run_triggers_actions(self, triggers_actions, sensor_type, sensor_value):
-        #print(triggers_actions)
-        #print("Sensor Type: ", sensor_type, "Sensor Value: ", sensor_value)
+        current_sensor_type_value = sensor_type
+        print("function run_triggers_actions atribute sensor_type value: ", sensor_type)
         
-        print()
-        #print(triggers_actions)
+        #print("sensor_type_to_check: ", sensor_type, "sensor_value_to_check: ", sensor_value)
         # Load JSON data
         parsed_data = triggers_actions
-
+        
         # Dynamically create dictionaries
         sensor_types_dict = {}
         action_dict = {}
-
         # Iterate through triggers
         for trigger in parsed_data['triggers']:
             for sensor_type, triggers_list in trigger.items():
+                sensor_type = current_sensor_type_value
                 if sensor_type not in sensor_types_dict:
                     sensor_types_dict[sensor_type] = []
                 
@@ -160,11 +159,14 @@ class Ezo:
         #sensor_type_to_check = 'pH'
         #sensor_value_to_check = 5.5
 
-        sensor_type_to_check = sensor_type
+        sensor_type_to_check = current_sensor_type_value
+
+        
+
         #convert sensor_value to a float so you can check the float sensor value in triggers_actions.json file
         sensor_value_to_check = float(sensor_value)
 
-        print("sensor_type_to_check: ", sensor_type, "sensor_value_to_check: ", sensor_value)
+        #print("sensor_type_to_check: ", sensor_type, "sensor_value_to_check: ", sensor_value)
 
         # Check if the sensor value for the given sensor type is in the trigger and execute the corresponding action
         if sensor_type_to_check in parsed_data['triggers'][0]:
@@ -177,7 +179,7 @@ class Ezo:
                     if action_name_to_execute in action_dict and 'relay' in action_dict[action_name_to_execute][0]:
                         action_to_execute = action_dict[action_name_to_execute][0]['relay']
                             
-                        print(f"Executing action for sensor type '{sensor_type_to_check}', value '{sensor_value_to_check}':")
+                        print(f"Executing action for sensor type '{sensor_type}', value '{sensor_value_to_check}':")
                         print(action_to_execute)
                     else:
                         print(f"No relay found for action '{action_name_to_execute}'")
@@ -202,14 +204,13 @@ class Ezo:
         return json_dict["sensors"]
 
     def poll_sensors(self, sensors, triggers_actions = None):
-        #print(sensors)
-        for i in sensors:
-            #print(i["type"], "   ", i["address"])
-            self.cmd_r(i["type"], i["address"], triggers_actions)
+        for s in sensors:
+            self.cmd_r(s["type"], s["address"], triggers_actions)
+            time.sleep(3)
 
     def cmd_r(self, sensor_type, i2c_addr, triggers_actions = None):
+        print("function cmd_r sensor_type atribute value: ", sensor_type)
 
-        #print(triggers_actions)
         # Create library object on our I2C port
         self.device = I2CDevice(i2c, i2c_addr)
 
@@ -245,34 +246,37 @@ class Ezo:
                 #remove \x00 from the end of the string
                 str_result = str_result.replace('\x00','')
 
+                if sensor_type == "pH":
+                    print("Sensor type in pH check: ", sensor_type)
+                    # Converting var1 to a float and formatting it to one decimal point, then creating var2
+                    str_result = "{:.1f}".format(float(str_result))
+
+                    print("pH Value: ", str_result)
+                    
+                    #test the run_triggers_actions function
+                    self.run_triggers_actions(triggers_actions, "pH", str_result)
+                    print()
+
                 if sensor_type == "HUM":
+                    print("Sensor type in HUM check: ", sensor_type)
                     # Populate humidity sensor values
                     self.ezo_sensor_values["relative_humidity"] = str_result.split(',')[0]
                     self.ezo_sensor_values["air_temperature"] = str_result.split(',')[1]
                     self.ezo_sensor_values["dew_point"] = str_result.split(',')[3]
 
-                    #print(str_result)
                     print("Relative Humidity: ", self.ezo_sensor_values["relative_humidity"])
                     print("Air Temperature: ", self.ezo_sensor_values["air_temperature"])
                     print("Dew Point: ", self.ezo_sensor_values["dew_point"])
+                    print()
 
                 if sensor_type == "RTD":
-                    #print("Res Temp")
+                    print("Sensor type in RTD check: ", sensor_type)
                     str_result = "{:.1f}".format(float(str_result))
                     print("Reservoir Temperature: ", str_result)
+                    
+                    #test the run_triggers_actions function
+                    self.run_triggers_actions(triggers_actions, "RTD", str_result)
 
-                    print("RTD Value: ", str_result)
-                    
-                    #test the triggers_actions function
-                    self.run_triggers_actions(triggers_actions, sensor_type, str_result)
-   
-                if sensor_type == "pH":
-                    # Converting var1 to a float and formatting it to one decimal point, then creating var2
-                    str_result = str_result[:-2]
-                    #print("Converted value:", var2)
-                    print("pH Value: ", str_result)
-                    
-                    #test the triggers_actions function
-                    self.run_triggers_actions(triggers_actions, sensor_type, str_result)
+                    print()
             else:
                 print("ERROR")
