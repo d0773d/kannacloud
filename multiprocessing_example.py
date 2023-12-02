@@ -2,69 +2,72 @@ import asyncio
 import board
 import busio
 import time
-import serial
+import os
+import sys
+import json
+import multiprocessing
 
-from multiprocessing import Process
-from ezo_sensors import Ezo
-
-ser = serial.Serial('/dev/ttyAMA1', 9600, timeout=1)
+from ezo_sensors import Initialize, Ezo
+from nextion import Nextion
 
 # instantiate the objects
-res = Ezo(0x66, "tmp", False)
-humidity = Ezo(0x6F, "hum", False)
-ph = Ezo(0x63, "ph", False)
+init = Initialize()
+nextion = Nextion()
+ezo = Ezo()
 
-def monitor_nextion():
+poll_sensor_list = ezo.get_sensor_types_addresses()
+triggers_actions = ezo.get_triggers_and_actions()
+
+
+def monitor_nextion(queue, messages):
     while True:
-        data = ser.readline()
-        print(data)
+        command = nextion.monitor_nextion()
 
-        if data is not None:
-            # convert bytearray to string
-            data_string = ''.join([chr(b) for b in data])
+        if command:
+            print("From the process:", command[0])
+            queue.put(command)
+        else:
+            print("Command is empty")
 
-            substrings = []
-            in_brackets = False
-            current_substring = ""
-            for c in data_string:
-                if c == "<":
-                    in_brackets = True
-                elif c == ">" and in_brackets:
-                    substrings.append(current_substring)
-                    current_substring = ""
-                    in_brackets = False
-                elif in_brackets:
-                    current_substring += c
-            if current_substring:
-                substrings.append(current_substring)
-            # using set()
-            # to remove duplicate commands
-            # from list
-            substrings = list(set(substrings))
+        time.sleep(2)
 
-            print("The command between <> : " + str(substrings))
-
-def get_res_temp():
+def poll_sensors(queue):
+    loop_poll_sensors = False
     while True:
-        print("res")
-        res.cmd_r()
+        command = queue.get()
 
-def get_hum():
-    while True:
-        humidity.cmd_r()
+        # Check if message is cmd1, set loop_poll_sensors to True
+        if command:
+            if command[0] == "cmd1":
+                loop_poll_sensors = True
+                while loop_poll_sensors:
+                    ezo.poll_sensors(poll_sensor_list, triggers_actions)
 
-def get_ph():
-    while True:
-        ph.cmd_r()
+                    cmd = queue.get()
 
-# Create a new process with a specified function to execute.
-uart_monitor = Process(target=monitor_nextion)
-res_temp_val = Process(target=get_res_temp)
-hum_val = Process(target=get_hum)
-ph_val = Process(target=get_ph)
+                    if cmd[0] == "cmd2":
+                        loop_poll_sensors = False
 
-# Run the new process
-uart_monitor.start()
-res_temp_val.start()
-hum_val.start()
-ph_val.start()
+
+if __name__ == "__main__":
+    # Create a multiprocessing Queue
+    message_queue = multiprocessing.Queue()
+
+    # Define a list of messages to be sent
+    messages_to_send = []
+
+    # Create the monitor_nextion_process process
+    monitor_nextion_process = multiprocessing.Process(target=monitor_nextion, args=(message_queue, messages_to_send))
+    monitor_nextion_process.start()
+
+    # Create the poll_senesors_process process
+    poll_sensors_process = multiprocessing.Process(target=poll_sensors, args=(message_queue,))
+    poll_sensors_process.start()
+
+    # Wait for the monitor_nextion_process to finish
+    monitor_nextion_process.join()
+
+    # Wait for the monitor_nextion_process to finish
+    poll_sensors_process.join()
+
+    print("Processes have finished.")
