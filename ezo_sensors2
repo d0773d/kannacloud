@@ -108,6 +108,7 @@ class Ezo:
 
         self.ezo_sensor_values = {
             "result": bytearray(24),
+            "res_temp": None,
             "relative_humidity": None,
             "dew_point": None,
             "air_temperature": None
@@ -202,70 +203,91 @@ class Ezo:
             time.sleep(3)
 
     def cmd_r(self, sensor_type, i2c_addr, triggers_actions = None):
+        # Set cmd variable to encode the sensor command to a byte array
+        cmd = None
+        
+        # Set the current Res temp to current_res_temp variable to use for temp compensated sensor values
+        current_res_temp = self.ezo_sensor_values["res_temp"]
 
-        # Create library object on our I2C port
-        self.device = I2CDevice(i2c, i2c_addr)
+        # pH reading should only be temperature compensated so...
+        # Code should skip the first pH reading because ezo_sensor_values["res_temp"] should be None
+        # Code should get the next pH reading because ezo_sensor_values["res_temp"] should be set with the current res temp value
+        if current_res_temp is not None and sensor_type == "pH":
+            #print("current_res_temp variable is NOT None")
+            cmd = "RT," + current_res_temp
 
-        # Send the R command
+            # Encode cmd variable to a bytearray
+            cmd = cmd.encode()
+            print(cmd)
 
-        cmd = "R"
+        if sensor_type == "RTD" or sensor_type == "HUM":
+            cmd = "R"
 
-        # Encode cmd variable to a bytearray
-        cmd = cmd.encode()
+            # Encode cmd variable to a bytearray
+            cmd = cmd.encode()
+    
+        if cmd is not None:
+            #print("current_res_temp: ", current_res_temp)
 
-        #time.sleep(3)
+            # Create library object on our I2C port
+            self.device = I2CDevice(i2c, i2c_addr)
 
-        # Set the result buffer with the Sensor data result
-        with self.device:
-            self.device.write(cmd)
+            # Send the R command
+            # Set the result buffer with the Sensor data result
+            #print("BEFORE running write command cmd variable value ", cmd)
+            with self.device:
+                self.device.write(cmd)
 
-        # EZO sensor needs a delay to calculate the result
-        time.sleep(self.ezo_sensor_settings["short_wait"])
+            # EZO sensor needs a delay to calculate the result
+            time.sleep(self.ezo_sensor_settings["short_wait"])
 
-        # Set the result buffer with the Sensor data result
-        with self.device:
-            raw_result = bytearray(self.ezo_sensor_settings["largest_string"])
-            self.device.readinto(raw_result)
+            # Set the result buffer with the Sensor data result
+            with self.device:
+                raw_result = bytearray(self.ezo_sensor_settings["largest_string"])
+                self.device.readinto(raw_result)
 
-            # if the response isn't an error
-            if raw_result[0] == 1:
-                # Convert bytearray to string
-                str_result = ''.join([chr(b) for b in raw_result])
+                # if the response isn't an error
+                if raw_result[0] == 1:
+                    # Convert bytearray to string
+                    str_result = ''.join([chr(b) for b in raw_result])
 
-                # remove first char of 1
-                str_result = str_result[1:]
+                    # remove first char of 1
+                    str_result = str_result[1:]
 
-                #remove \x00 from the end of the string
-                str_result = str_result.replace('\x00','')
+                    #remove \x00 from the end of the string
+                    str_result = str_result.replace('\x00','')
 
-                if sensor_type == "pH":
-                    # Converting str_result to a float and formatting it to one decimal point, then set the str_result var to str_result
-                    str_result = "{:.1f}".format(float(str_result))
+                    if sensor_type == "pH":
+                        # Converting str_result to a float and formatting it to one decimal point, then set the str_result var to str_result
+                        str_result = "{:.1f}".format(float(str_result))
 
-                    print("pH Value: ", str_result)
-                    
-                    #test the run_triggers_actions function
-                    self.run_triggers_actions(triggers_actions, "pH", str_result)
-                    print()
+                        print("pH Value: ", str_result)
+                        
+                        #test the run_triggers_actions function
+                        self.run_triggers_actions(triggers_actions, "pH", str_result)
+                        print()
 
-                if sensor_type == "HUM":
-                    # Populate humidity sensor values
-                    self.ezo_sensor_values["relative_humidity"] = str_result.split(',')[0]
-                    self.ezo_sensor_values["air_temperature"] = str_result.split(',')[1]
-                    self.ezo_sensor_values["dew_point"] = str_result.split(',')[3]
+                    if sensor_type == "HUM":
+                        # Populate humidity sensor values
+                        self.ezo_sensor_values["relative_humidity"] = str_result.split(',')[0]
+                        self.ezo_sensor_values["air_temperature"] = str_result.split(',')[1]
+                        self.ezo_sensor_values["dew_point"] = str_result.split(',')[3]
 
-                    print("Relative Humidity: ", self.ezo_sensor_values["relative_humidity"])
-                    print("Air Temperature: ", self.ezo_sensor_values["air_temperature"])
-                    print("Dew Point: ", self.ezo_sensor_values["dew_point"])
-                    print()
+                        print("Relative Humidity: ", self.ezo_sensor_values["relative_humidity"])
+                        print("Air Temperature: ", self.ezo_sensor_values["air_temperature"])
+                        print("Dew Point: ", self.ezo_sensor_values["dew_point"])
+                        print()
 
-                if sensor_type == "RTD":
-                    str_result = "{:.1f}".format(float(str_result))
-                    print("Reservoir Temperature: ", str_result)
-                    
-                    #test the run_triggers_actions function
-                    self.run_triggers_actions(triggers_actions, "RTD", str_result)
+                    if sensor_type == "RTD":
+                        str_result = "{:.1f}".format(float(str_result))
 
-                    print()
-            else:
-                print("ERROR")
+                        self.ezo_sensor_values["res_temp"] = str_result
+
+                        print("Reservoir Temperature: ", str_result)
+                        
+                        #test the run_triggers_actions function
+                        self.run_triggers_actions(triggers_actions, "RTD", str_result)
+
+                        print()
+                else:
+                    print("ERROR")
