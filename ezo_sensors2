@@ -109,6 +109,7 @@ class Ezo:
         self.ezo_sensor_values = {
             "result": bytearray(24),
             "res_temp": None,
+            "pH": None,
             "relative_humidity": None,
             "dew_point": None,
             "air_temperature": None
@@ -263,18 +264,23 @@ class Ezo:
                         # Converting str_result to a float and formatting it to one decimal point, then set the str_result var to str_result
                         str_result = "{:.1f}".format(float(str_result))
 
+                        # Populate the pH value to the self.ezo_sensor_values dictionary
+                        self.ezo_sensor_values["pH"] = str_result
+
+                        # Output the sensor value to the terminal
                         print("pH Value: ", str_result)
                         
-                        #test the run_triggers_actions function
+                        # Execute the run_triggers_actions function
                         self.run_triggers_actions(triggers_actions, "pH", str_result)
                         print()
 
                     if sensor_type == "HUM":
-                        # Populate humidity sensor values
+                        # Populate humidity sensor values to the self.ezo_sensor_values dictionary
                         self.ezo_sensor_values["relative_humidity"] = str_result.split(',')[0]
                         self.ezo_sensor_values["air_temperature"] = str_result.split(',')[1]
                         self.ezo_sensor_values["dew_point"] = str_result.split(',')[3]
 
+                        # Output the sensor values to the terminal
                         print("Relative Humidity: ", self.ezo_sensor_values["relative_humidity"])
                         print("Air Temperature: ", self.ezo_sensor_values["air_temperature"])
                         print("Dew Point: ", self.ezo_sensor_values["dew_point"])
@@ -283,11 +289,13 @@ class Ezo:
                     if sensor_type == "RTD":
                         str_result = "{:.1f}".format(float(str_result))
 
+                        # Populate the Reservoir Temperature value to the self.ezo_sensor_values dictionary
                         self.ezo_sensor_values["res_temp"] = str_result
 
+                        # Output the sensor value to the terminal
                         print("Reservoir Temperature: ", str_result)
                         
-                        #test the run_triggers_actions function
+                        # Execute the run_triggers_actions function
                         self.run_triggers_actions(triggers_actions, "RTD", str_result)
 
                         print()
