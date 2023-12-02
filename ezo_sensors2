@@ -93,7 +93,6 @@ class Ezo:
         ):
 
         self.device_dict = []
-        #self.triggers_actions = self.get_triggers_and_actions()
 
         self.ezo_sensor_settings = {
             "device_address": i2c_addr,
