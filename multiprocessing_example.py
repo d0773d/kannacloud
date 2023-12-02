@@ -19,7 +19,7 @@ poll_sensor_list = ezo.get_sensor_types_addresses()
 triggers_actions = ezo.get_triggers_and_actions()
 
 
-def monitor_nextion(queue, messages):
+def monitor_nextion(queue):
     while True:
         command = nextion.monitor_nextion()
 
@@ -29,35 +29,39 @@ def monitor_nextion(queue, messages):
         else:
             print("Command is empty")
 
-        time.sleep(2)
+        # Add a small delay to avoid excessive CPU usage
+        time.sleep(0.1)
 
 def poll_sensors(queue):
-    loop_poll_sensors = False
     while True:
-        command = queue.get()
+        print("Still looping")
 
-        # Check if message is cmd1, set loop_poll_sensors to True
-        if command:
-            if command[0] == "cmd1":
-                loop_poll_sensors = True
-                while loop_poll_sensors:
-                    ezo.poll_sensors(poll_sensor_list, triggers_actions)
+        print(ezo.ezo_sensor_settings["poll_sensors"])
 
-                    cmd = queue.get()
+        if ezo.ezo_sensor_settings["poll_sensors"]:
+            ezo.poll_sensors(poll_sensor_list, triggers_actions)
 
-                    if cmd[0] == "cmd2":
-                        loop_poll_sensors = False
+        # If message is cmd1, set ezo.ezo_sensor_settings["poll_sensors"] to True
+            if not queue.empty():
+                command = queue.get(block=False)
+            
+                print("Command: ", command)
+                if command and command[0] == "cmd1":
+                    ezo.ezo_sensor_settings["poll_sensors"] = True
 
+                # If message is cmd2, set ezo.ezo_sensor_settings["poll_sensors"] to False
+                if command and command[0] == "cmd2":
+                    ezo.ezo_sensor_settings["poll_sensors"] = False
+
+        # Add a small delay to avoid excessive CPU usage
+        time.sleep(1)
 
 if __name__ == "__main__":
     # Create a multiprocessing Queue
     message_queue = multiprocessing.Queue()
 
-    # Define a list of messages to be sent
-    messages_to_send = []
-
     # Create the monitor_nextion_process process
-    monitor_nextion_process = multiprocessing.Process(target=monitor_nextion, args=(message_queue, messages_to_send))
+    monitor_nextion_process = multiprocessing.Process(target=monitor_nextion, args=(message_queue,))
     monitor_nextion_process.start()
 
     # Create the poll_senesors_process process
@@ -65,9 +69,9 @@ if __name__ == "__main__":
     poll_sensors_process.start()
 
     # Wait for the monitor_nextion_process to finish
-    monitor_nextion_process.join()
+    #monitor_nextion_process.join()
 
     # Wait for the monitor_nextion_process to finish
-    poll_sensors_process.join()
+    #poll_sensors_process.join()
 
     print("Processes have finished.")
