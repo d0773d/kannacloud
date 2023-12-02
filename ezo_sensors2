@@ -132,6 +132,9 @@ class Ezo:
             return None
             
     def run_triggers_actions(self, triggers_actions, sensor_type, sensor_value):
+        # Set the current_sensor_type value variable with the current sensor_type value
+        # This is needed due to a bug where it will get stuck on a 
+        # sensor_type value during the Iterate through triggers code below starting at the code line #147
         current_sensor_type_value = sensor_type
 
         # Load JSON data
