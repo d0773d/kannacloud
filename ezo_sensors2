@@ -154,7 +154,7 @@ class Ezo:
                     # Create dictionary for action
                     action_dict[action_name] = parsed_data['actions'][0][action_name]
 
-        # Specify the sensor type and sensor value to check
+        # Debug run_trigger_actions function by specifying the sensor type and sensor value to check
         #sensor_type_to_check = 'pH'
         #sensor_value_to_check = 5.5
 
