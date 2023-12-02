@@ -210,7 +210,9 @@ class Ezo:
         current_res_temp = self.ezo_sensor_values["res_temp"]
 
         # pH reading should only be temperature compensated so...
-        # Code should skip the first pH reading because ezo_sensor_values["res_temp"] should be None
+        # Code should skip the first pH reading because ezo_sensor_values["res_temp"] should be None; however,
+        # this depends on how the initialize code gets the sensor address and stores them in the kc_settings.json file
+        #
         # Code should get the next pH reading because ezo_sensor_values["res_temp"] should be set with the current res temp value
         if current_res_temp is not None and sensor_type == "pH":
             #print("current_res_temp variable is NOT None")
