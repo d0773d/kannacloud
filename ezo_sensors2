@@ -203,6 +203,7 @@ class Ezo:
     def poll_sensors(self, sensors, triggers_actions = None):
         for s in sensors:
             self.cmd_r(s["type"], s["address"], triggers_actions)
+            # Slow the for each code down
             time.sleep(3)
 
     def cmd_r(self, sensor_type, i2c_addr, triggers_actions = None):
