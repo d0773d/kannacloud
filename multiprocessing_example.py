@@ -41,14 +41,14 @@ def poll_sensors(queue):
         if ezo.ezo_sensor_settings["poll_sensors"]:
             ezo.poll_sensors(poll_sensor_list, triggers_actions)
 
-        # If message is cmd1, set ezo.ezo_sensor_settings["poll_sensors"] to True
-            if not queue.empty():
+        if not queue.empty():
                 command = queue.get(block=False)
-            
+
+                # If message is cmd1, set ezo.ezo_sensor_settings["poll_sensors"] to True
                 print("Command: ", command)
                 if command and command[0] == "cmd1":
                     ezo.ezo_sensor_settings["poll_sensors"] = True
-
+                
                 # If message is cmd2, set ezo.ezo_sensor_settings["poll_sensors"] to False
                 if command and command[0] == "cmd2":
                     ezo.ezo_sensor_settings["poll_sensors"] = False
