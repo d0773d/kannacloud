@@ -5,8 +5,7 @@ import time
 import os
 import sys
 import json
-
-from multiprocessing import Process
+import multiprocessing
 
 from ezo_sensors import Initialize, Ezo
 from nextion import Nextion
@@ -19,36 +18,56 @@ ezo = Ezo()
 poll_sensor_list = ezo.get_sensor_types_addresses()
 triggers_actions = ezo.get_triggers_and_actions()
 
-def monitor_nextion():
+
+def monitor_nextion(queue):
     while True:
-        nextion.monitor_nextion()
+        command = nextion.monitor_nextion()
 
-def poll_sensors():
+        if command:
+            print("From the process:", command[0])
+            queue.put(command)
+        else:
+            print("Command is empty")
+
+        # Add a small delay to avoid excessive CPU usage
+        time.sleep(0.1)
+
+def poll_sensors(queue):
     while True:
-        print()
-        #print(triggers_actions["triggers"]["pH"])
-        ezo.poll_sensors(poll_sensor_list, triggers_actions)
+        if ezo.ezo_sensor_settings["poll_sensors"]:
+            ezo.poll_sensors(poll_sensor_list, triggers_actions)
 
-if init.init_status() is False:
-    print("Grab Sensors and Sensor Settings")
-    init.initialize_devices()
-else:
-    print("Initialize: ", True)
+        if not queue.empty():
+                command = queue.get(block=False)
 
-# Create a new process with a specified function to execute.
-uart_monitor = Process(target=monitor_nextion)
-poll_sensors = Process(target=poll_sensors)
+                # If message is cmd1, set ezo.ezo_sensor_settings["poll_sensors"] to True
+                print("Command: ", command)
+                if command and command[0] == "cmd1":
+                    ezo.ezo_sensor_settings["poll_sensors"] = True
+                
+                # If message is cmd2, set ezo.ezo_sensor_settings["poll_sensors"] to False
+                if command and command[0] == "cmd2":
+                    ezo.ezo_sensor_settings["poll_sensors"] = False
 
-# Run the new process
-#uart_monitor.start()
-poll_sensors.start()
+        # Add a small delay to avoid excessive CPU usage
+        time.sleep(1)
 
-while True:
-    time.sleep(15)
+if __name__ == "__main__":
+    # Create a multiprocessing Queue
+    message_queue = multiprocessing.Queue()
 
-    if poll_sensors.is_alive():
-        print("Alive")
-    else:
-        #Restart the script if poll_sensors isn't alive.
+    # Create the monitor_nextion_process process
+    monitor_nextion_process = multiprocessing.Process(target=monitor_nextion, args=(message_queue,))
+    monitor_nextion_process.start()
 
-        os.execv(sys.executable, ['python3'] + sys.argv)
+    # Create the poll_senesors_process process
+    poll_sensors_process = multiprocessing.Process(target=poll_sensors, args=(message_queue,))
+    poll_sensors_process.start()
+
+    # Wait for the monitor_nextion_process to finish
+    #monitor_nextion_process.join()
+
+    # Wait for the monitor_nextion_process to finish
+    #poll_sensors_process.join()
+
+    print("Processes have finished.")
