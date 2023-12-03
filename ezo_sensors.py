@@ -3,27 +3,15 @@ import busio
 import time
 import json
 
+from nextion import Nextion
 from adafruit_bus_device.i2c_device import I2CDevice
+
 i2c = busio.I2C(board.SCL, board.SDA)
+nextion = Nextion()
 
 class Initialize:
     def __init__(self):
         print("Initializing")
-
-    def get_triggers_and_actions(self):
-        # Opening JSON file
-        with open('/home/pi/code/python/triggers_actions.json', 'r') as f:
-            # returns JSON object as 
-            # a dictionary
-            json_data = json.load(f)
- 
-        # Closing file
-        f.close()
-
-        if all(key in json_data for key in ("triggers", "actions")):
-            if len(json_data["triggers"]) and len(json_data["actions"]) != 0:
-                #print("Triggers and Actions are found")
-                return json_data
 
     def init_status(self):
         # Opening JSON file
@@ -103,29 +91,103 @@ class Ezo:
             self,
             seven_seg_output=False,
             touch_scr_output=False,
-            i2c_addr=None,
-            sensor_type=None,
         ):
 
-        self.device_dict = []
+        self.app_settings = {
+            "manual_mode": False
+        }
 
         self.ezo_sensor_settings = {
-            "device_address": i2c_addr,
-            "sensor_type": sensor_type,
             "short_wait": .8,
             "long_wait": 5,
             "largest_string": 24,
             "smallest_string": 4,
-            "name": None,
-            "units": None
+            "poll_sensors": True
         }
 
         self.ezo_sensor_values = {
             "result": bytearray(24),
+            "res_temp": None,
+            "pH": None,
             "relative_humidity": None,
             "dew_point": None,
             "air_temperature": None
         }
+
+    def get_triggers_and_actions(self):
+        # Opening JSON file
+        with open('/home/pi/code/python/triggers_actions.json', 'r') as f:
+            # returns JSON object as 
+            # a dictionary
+            json_data = json.load(f)
+ 
+        # Closing file
+        f.close()
+
+        if all(key in json_data for key in ("triggers", "actions")):
+            if len(json_data["triggers"]) and len(json_data["actions"]) != 0:
+                #print("Triggers and Actions are found")
+                return json_data
+        else:
+            return None
+            
+    def run_triggers_actions(self, triggers_actions, sensor_type, sensor_value):
+        # Set the current_sensor_type variable with the current sensor_type attribute value
+        # This is needed due to a bug where it will get stuck on a 
+        # sensor_type value during the Iterate through triggers code below starting at code line #147
+        current_sensor_type_value = sensor_type
+
+        # Load JSON data
+        parsed_data = triggers_actions
+        
+        # Dynamically create dictionaries
+        sensor_types_dict = {}
+        action_dict = {}
+
+        # Iterate through triggers
+        for trigger in parsed_data['triggers']:
+            for sensor_type, triggers_list in trigger.items():
+                sensor_type = current_sensor_type_value
+                if sensor_type not in sensor_types_dict:
+                    sensor_types_dict[sensor_type] = []
+                
+                for trigger_info in triggers_list:
+                    action_name = trigger_info['action_name']
+                    sensor_types_dict[sensor_type].append(action_name)
+                    
+                    # Create dictionary for action
+                    action_dict[action_name] = parsed_data['actions'][0][action_name]
+
+        # Debug run_trigger_actions function by specifying the sensor type and sensor value to check
+        #sensor_type_to_check = 'pH'
+        #sensor_value_to_check = 5.5
+
+        sensor_type_to_check = current_sensor_type_value
+
+        #convert sensor_value to a float so you can check the float sensor value in triggers_actions.json file
+        sensor_value_to_check = float(sensor_value)
+
+        # Check if the sensor value for the given sensor type is in the trigger and execute the corresponding action
+        if sensor_type_to_check in parsed_data['triggers'][0]:
+            for trigger_info in parsed_data['triggers'][0][sensor_type_to_check]:
+                if trigger_info['value'] == sensor_value_to_check:
+                    action_name_to_execute = trigger_info['action_name']
+                    action_to_execute = action_dict[action_name_to_execute]
+                
+                    # Check if relay exists in the action_dict
+                    if action_name_to_execute in action_dict and 'relay' in action_dict[action_name_to_execute][0]:
+                        action_to_execute = action_dict[action_name_to_execute][0]['relay']
+                            
+                        print(f"Executing action for sensor type '{sensor_type}', value '{sensor_value_to_check}':")
+                        print(action_to_execute)
+                    else:
+                        print(f"No relay found for action '{action_name_to_execute}'")
+
+                    # Check if print_debug exists in the action_dict
+                    if action_name_to_execute in action_dict and 'print_debug' in action_dict[action_name_to_execute][0]:
+                        action_to_execute = action_dict[action_name_to_execute][0]['print_debug']
+
+                        print(action_to_execute['message'])
 
     def get_sensor_types_addresses(self):
         # Opening JSON file
@@ -139,62 +201,112 @@ class Ezo:
 
         return json_dict["sensors"]
 
-    def poll_sensors(self, sensors):
-        for i in sensors:
-            self.cmd_r(i["type"], i["address"])
+    def poll_sensors(self, sensors, triggers_actions = None):
+        for s in sensors:
+            self.cmd_r(s["type"], s["address"], triggers_actions)
+            # Slow the for loop code down
+            time.sleep(1)
 
-    def cmd_r(self, sensor_type, i2c_addr):
-        # Create library object on our I2C port
-        self.device = I2CDevice(i2c, i2c_addr)
+    def cmd_r(self, sensor_type, i2c_addr, triggers_actions = None):
+        # Set cmd variable to encode the sensor command to a byte array
+        cmd = None
+        
+        # Set the current Res temp to current_res_temp variable to use for temp compensated sensor values
+        current_res_temp = self.ezo_sensor_values["res_temp"]
 
-        # Send the R command
+        # pH reading should only be temperature compensated so...
+        # Code should skip the first pH reading because ezo_sensor_values["res_temp"] should be None; however,
+        # this depends on how the initialize code gets the sensor address and stores them in the kc_settings.json file
+        #
+        # Code should get the next pH reading because ezo_sensor_values["res_temp"] should be set with the current res temp value
+        if current_res_temp is not None and sensor_type == "pH":
+            #print("current_res_temp variable is NOT None")
+            cmd = "RT," + current_res_temp
 
-        cmd = "R"
+            # Encode cmd variable to a bytearray
+            cmd = cmd.encode()
+            print(cmd)
 
-        # Encode cmd variable to a bytearray
-        cmd = cmd.encode()
+        if sensor_type == "RTD" or sensor_type == "HUM":
+            cmd = "R"
 
-        #time.sleep(3)
+            # Encode cmd variable to a bytearray
+            cmd = cmd.encode()
+    
+        if cmd is not None:
+            #print("current_res_temp: ", current_res_temp)
 
-        # Set the result buffer with the Sensor data result
-        with self.device:
-            self.device.write(cmd)
+            # Create library object on our I2C port
+            self.device = I2CDevice(i2c, i2c_addr)
 
-        # EZO sensor needs a delay to calculate the result
-        time.sleep(self.ezo_sensor_settings["short_wait"])
+            # Send the R command
+            # Set the result buffer with the Sensor data result
+            #print("BEFORE running write command cmd variable value ", cmd)
+            with self.device:
+                self.device.write(cmd)
 
-        # Set the result buffer with the Sensor data result
-        with self.device:
-            raw_result = bytearray(self.ezo_sensor_settings["largest_string"])
-            self.device.readinto(raw_result)
+            # EZO sensor needs a delay to calculate the result
+            time.sleep(self.ezo_sensor_settings["short_wait"])
 
-            # if the response isn't an error
-            if raw_result[0] == 1:
-                # Convert bytearray to string
-                str_result = ''.join([chr(b) for b in raw_result])
+            # Set the result buffer with the Sensor data result
+            with self.device:
+                raw_result = bytearray(self.ezo_sensor_settings["largest_string"])
+                self.device.readinto(raw_result)
 
-                # remove first char of 1
-                str_result = str_result[1:]
+                # if the response isn't an error
+                if raw_result[0] == 1:
+                    # Convert bytearray to string
+                    str_result = ''.join([chr(b) for b in raw_result])
 
-                #remove \x00 from the end of the string
-                str_result = str_result.replace('\x00','')
+                    # remove first char of 1
+                    str_result = str_result[1:]
 
-                if sensor_type == "HUM":
-                    # Populate humidity sensor values
-                    self.ezo_sensor_values["relative_humidity"] = str_result.split(',')[0]
-                    self.ezo_sensor_values["air_temperature"] = str_result.split(',')[1]
-                    self.ezo_sensor_values["dew_point"] = str_result.split(',')[3]
+                    #remove \x00 from the end of the string
+                    str_result = str_result.replace('\x00','')
 
-                    #print(str_result)
-                    print("Relative Humidity: ", self.ezo_sensor_values["relative_humidity"])
-                    print("Air Temperature: ", self.ezo_sensor_values["air_temperature"])
-                    print("Dew Point: ", self.ezo_sensor_values["dew_point"])
+                    if sensor_type == "pH":
+                        # Converting str_result to a float and formatting it to one decimal point, then set the str_result var to str_result
+                        str_result = "{:.1f}".format(float(str_result))
 
-                if sensor_type == "RTD":
-                    #print("Res Temp")
-                    print("Reservoir Temperature: ", str_result)
-   
-                if sensor_type == "pH":
-                    print("pH Value: ", str_result)
-            else:
-                print("ERROR")
+                        # Populate the pH value to the self.ezo_sensor_values dictionary
+                        self.ezo_sensor_values["pH"] = str_result
+
+                        # Output the sensor value to the terminal
+                        print("pH Value: ", str_result)
+                        
+                        # Execute the run_triggers_actions function
+                        self.run_triggers_actions(triggers_actions, "pH", str_result)
+
+                        # Send pH value to the nextion screen
+                        nextion.nextion_send_value("ph", str_result)
+                        print()
+
+                    if sensor_type == "HUM":
+                        # Populate humidity sensor values to the self.ezo_sensor_values dictionary
+                        self.ezo_sensor_values["relative_humidity"] = str_result.split(',')[0]
+                        self.ezo_sensor_values["air_temperature"] = str_result.split(',')[1]
+                        self.ezo_sensor_values["dew_point"] = str_result.split(',')[3]
+
+                        # Output the sensor values to the terminal
+                        print("Relative Humidity: ", self.ezo_sensor_values["relative_humidity"])
+                        print("Air Temperature: ", self.ezo_sensor_values["air_temperature"])
+                        print("Dew Point: ", self.ezo_sensor_values["dew_point"])
+                        print()
+
+                    if sensor_type == "RTD":
+                        str_result = "{:.1f}".format(float(str_result))
+
+                        # Populate the Reservoir Temperature value to the self.ezo_sensor_values dictionary
+                        self.ezo_sensor_values["res_temp"] = str_result
+
+                        # Output the sensor value to the terminal
+                        print("Reservoir Temperature: ", str_result)
+                        
+                        # Execute the run_triggers_actions function
+                        self.run_triggers_actions(triggers_actions, "RTD", str_result)
+
+                        nextion.nextion_send_value("rtd", str_result)
+
+                        print()
+                else:
+                    print("ERROR")
