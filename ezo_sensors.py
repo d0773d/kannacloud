@@ -52,7 +52,7 @@ def poll_sensors(queue):
         # Add a small delay to avoid excessive CPU usage
         time.sleep(1)
 
-def ph_calibrate(queue):
+def ph_calibrate():
     print("Calibrate code goes here")
 
 if __name__ == "__main__":
