@@ -102,7 +102,9 @@ class Ezo:
             "long_wait": 5,
             "largest_string": 24,
             "smallest_string": 4,
-            "poll_sensors": True
+            "poll_sensors": True,
+            "ph_calibrate": False,
+            "ec_calibrate": False
         }
 
         self.ezo_sensor_values = {
@@ -291,6 +293,14 @@ class Ezo:
                         print("Relative Humidity: ", self.ezo_sensor_values["relative_humidity"])
                         print("Air Temperature: ", self.ezo_sensor_values["air_temperature"])
                         print("Dew Point: ", self.ezo_sensor_values["dew_point"])
+
+                        nextion.nextion_send_value("humidity", self.ezo_sensor_values["relative_humidity"])
+                        time.sleep(1)
+                        nextion.nextion_send_value("airtemp", self.ezo_sensor_values["air_temperature"])
+                        time.sleep(1)
+                        nextion.nextion_send_value("dewpoint", self.ezo_sensor_values["dew_point"])
+                        time.sleep(1)
+
                         print()
 
                     if sensor_type == "RTD":
