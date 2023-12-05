@@ -14,7 +14,6 @@ class Initialize:
         self.ezo_instance = ezo_instance
 
         if not self.init_status():
-            print("false")
             self.initialize_devices()
 
         print("Initializing")
