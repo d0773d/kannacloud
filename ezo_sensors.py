@@ -279,7 +279,8 @@ class Ezo:
                     str_result = str_result.replace('\x00','')
 
                     # Converting str_result to a float and formatting it to one decimal point, then set the str_result var to str_result
-                    str_result = "{:.1f}".format(float(str_result))
+                    #str_result = "{:.1f}".format(float(str_result))
+                    str_result = str_result
                 
                     nextion.nextion_send_value("phcal", str_result)
                 #print("pH was calibrated succesfully!")
@@ -363,7 +364,9 @@ class Ezo:
 
                     if sensor_type == "pH":
                         # Converting str_result to a float and formatting it to one decimal point, then set the str_result var to str_result
-                        str_result = "{:.1f}".format(float(str_result))
+                        
+                        #str_result = "{:.1f}".format(float(str_result))
+                        str_result = str_result[:-2]
 
                         # Populate the pH value to the self.ezo_sensor_values dictionary
                         self.ezo_sensor_values["pH"] = str_result
