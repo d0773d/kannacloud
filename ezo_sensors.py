@@ -15,6 +15,8 @@ class Initialize:
 
         if not self.init_status():
             self.initialize_devices()
+        elif self.init_status():
+            self.ezo_instance.populate_ezo_settings_i2c()
 
         print("Initializing")
 
@@ -207,6 +209,24 @@ class Ezo:
 
                         print(action_to_execute['message'])
 
+    def populate_ezo_settings_i2c(self):
+        poll_sensor_list = self.get_sensor_types_addresses()
+
+        for sensor in poll_sensor_list:
+            sensor_type = sensor['type']
+            sensor_address = sensor['address']
+
+            if sensor_type == "pH":
+                self.ezo_sensor_settings["ph_i2c_addr"] = sensor_address
+
+            if sensor_type == "RTD":
+                self.ezo_sensor_settings["rtd_i2c_addr"] = sensor_address
+
+            if sensor_type == "HUM":
+                self.ezo_sensor_settings["hum_i2c_addr"] = sensor_address
+            
+            #print(f"Sensor Type: {sensor_type}, Address: {sensor_address}")
+
     def get_sensor_types_addresses(self):
         # Opening JSON file
         with open('/home/pi/code/python/kc_settings.json', 'r') as f:
@@ -219,7 +239,7 @@ class Ezo:
 
         return json_dict["sensors"]
     
-    def send_sensor_cmd(self, i2c_addr, command):
+    def send_sensor_cmd(self, i2c_addr, command, cal_mode = None):
         cmd = command
 
         # Encode cmd variable to a bytearray
@@ -238,18 +258,31 @@ class Ezo:
                 self.device.write(cmd)
 
             # EZO sensor needs a delay to calculate the result
-            time.sleep(self.ezo_sensor_settings["ph_cal_wait"])
+            if cal_mode:
+                time.sleep(self.ezo_sensor_settings["ph_cal_wait"])
+            else:
+                time.sleep(self.ezo_sensor_settings["short_wait"])
 
             # Set the result buffer with the Sensor data result
             with self.device:
                 raw_result = bytearray(self.ezo_sensor_settings["largest_string"])
                 self.device.readinto(raw_result)
-
-                # if the response isn't an error
                 if raw_result[0] == 1:
-                    print("pH was calibrated succesfully!")
 
-        print()
+                    # Convert bytearray to string
+                    str_result = ''.join([chr(b) for b in raw_result])
+
+                    # remove first char of 1
+                    str_result = str_result[1:]
+
+                    #remove \x00 from the end of the string
+                    str_result = str_result.replace('\x00','')
+
+                    # Converting str_result to a float and formatting it to one decimal point, then set the str_result var to str_result
+                    str_result = "{:.1f}".format(float(str_result))
+                
+                    nextion.nextion_send_value("phcal", str_result)
+                #print("pH was calibrated succesfully!")
 
     def poll_sensors(self, sensors, triggers_actions = None):
         for s in sensors:
@@ -257,17 +290,20 @@ class Ezo:
             # Slow the for loop code down
             time.sleep(1)
     
-    def calibrate_ph(self, cal_type):
+    def calibrate_ph(self, i2c_addr, cal_type):
         i2c_address = None
 
         if cal_type == "mid":
-            self.send_sensor_cmd(i2c_address, "Cal,mid,7.00")
+            #self.send_sensor_cmd(i2c_address, "Cal,mid,7.00")
+            print("mid point calibration at address:", i2c_addr)
 
         if cal_type == "low":
-            self.send_sensor_cmd(i2c_address, "Cal,low,4.00")
+            print()
+            #self.send_sensor_cmd(i2c_address, "Cal,low,4.00")
         
         if cal_type == "high":
-            self.send_sensor_cmd(i2c_address, "Cal,high,10.00")
+            print()
+            #self.send_sensor_cmd(i2c_address, "Cal,high,10.00")
 
     def cmd_r(self, sensor_type, i2c_addr, triggers_actions = None):
         # Set cmd variable to encode the sensor command to a byte array
