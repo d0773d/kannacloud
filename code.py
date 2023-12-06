@@ -11,13 +11,12 @@ from ezo_sensors import Initialize, Ezo
 from nextion import Nextion
 
 # instantiate the objects
-init = Initialize()
-nextion = Nextion()
 ezo = Ezo()
+init = Initialize(ezo) # Pass the ezo object to the Initialize class to set the sensor i2c addresses to be used in sensor commands
+nextion = Nextion()
 
 poll_sensor_list = ezo.get_sensor_types_addresses()
 triggers_actions = ezo.get_triggers_and_actions()
-
 
 def monitor_nextion(queue):
     while True:
@@ -33,9 +32,16 @@ def monitor_nextion(queue):
         time.sleep(0.1)
 
 def poll_sensors(queue):
+    ph_calibration_type = None
+
     while True:
         if ezo.ezo_sensor_settings["poll_sensors"]:
             ezo.poll_sensors(poll_sensor_list, triggers_actions)
+
+        if ezo.ezo_sensor_settings["ph_calibrate"]:
+            ezo.send_sensor_cmd(ezo.ezo_sensor_settings["ph_i2c_addr"], "R", cal_mode=False)
+            ezo.calibrate_ph(ezo.ezo_sensor_settings["ph_i2c_addr"], ph_calibration_type)
+            time.sleep(2)
 
         if not queue.empty():
                 command = queue.get(block=False)
@@ -43,11 +49,17 @@ def poll_sensors(queue):
                 # If message is cmd1, set ezo.ezo_sensor_settings["poll_sensors"] to True
                 print("Command: ", command)
                 if command and command[0] == "cmd1":
+                    ezo.ezo_sensor_settings["ph_calibrate"] = False
                     ezo.ezo_sensor_settings["poll_sensors"] = True
                 
                 # If message is cmd2, set ezo.ezo_sensor_settings["poll_sensors"] to False
                 if command and command[0] == "cmd2":
                     ezo.ezo_sensor_settings["poll_sensors"] = False
+
+                if command and command[0] == "cmd3":
+                    ph_calibration_type = "mid"
+                    ezo.ezo_sensor_settings["poll_sensors"] = False
+                    ezo.ezo_sensor_settings["ph_calibrate"] = True
 
         # Add a small delay to avoid excessive CPU usage
         time.sleep(1)
