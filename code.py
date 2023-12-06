@@ -55,11 +55,11 @@ def poll_sensors(queue):
                 # If message is cmd2, set ezo.ezo_sensor_settings["poll_sensors"] to False
                 if command and command[0] == "cmd2":
                     ezo.ezo_sensor_settings["poll_sensors"] = False
+                    ezo.ezo_sensor_settings["ph_calibrate"] = True
 
                 if command and command[0] == "cmd3":
                     ph_calibration_type = "mid"
                     ezo.ezo_sensor_settings["poll_sensors"] = False
-                    ezo.ezo_sensor_settings["ph_calibrate"] = True
 
         # Add a small delay to avoid excessive CPU usage
         time.sleep(1)
