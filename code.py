@@ -61,6 +61,15 @@ def poll_sensors(queue):
                     ph_calibration_type = "mid"
                     ezo.ezo_sensor_settings["poll_sensors"] = False
 
+                if command and command[0] == "cmd4":
+                    ezo.ezo_sensor_settings["ph_calibrate"] = False
+                    time.sleep(3)
+                    ezo.send_sensor_cmd(ezo.ezo_sensor_settings["ph_i2c_addr"], "Cal,mid,7.00", cal_mode=True)
+                    time.sleep(3)
+                    ezo.ezo_sensor_settings["ph_calibrate"] = True
+
+
+
         # Add a small delay to avoid excessive CPU usage
         time.sleep(1)
 
