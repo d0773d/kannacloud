@@ -259,6 +259,7 @@ class Ezo:
 
             # EZO sensor needs a delay to calculate the result
             if cal_mode:
+                print("calmode")
                 time.sleep(self.ezo_sensor_settings["ph_cal_wait"])
             else:
                 time.sleep(self.ezo_sensor_settings["short_wait"])
