@@ -262,7 +262,6 @@ class Ezo:
             command=None,
             triggers_actions=None,
             cal_mode=None):
-        print(cal_mode)
         # Set cmd variable to encode the sensor command to a byte array
         cmd = None
         
@@ -281,7 +280,6 @@ class Ezo:
             # Encode cmd variable to a bytearray
             cmd = cmd.encode()
         elif cal_mode == True and sensor_type == "pH":
-            print(cal_mode)
             cmd = "R"
 
             cmd = cmd.encode()
@@ -306,7 +304,6 @@ class Ezo:
 
             # EZO sensor needs a delay to calculate the result
             if cal_mode:
-                print(cal_mode)
                 time.sleep(self.ezo_sensor_settings["ph_cal_wait"])
             else:
                 time.sleep(self.ezo_sensor_settings["short_wait"])
@@ -332,15 +329,15 @@ class Ezo:
                         
                         #str_result = "{:.1f}".format(float(str_result))
 
-                        # Output the sensor value to the terminal
-                        print("pH Value: ", str_result)
-
                         # Send pH value to the nextion screen
                         if cal_mode == False:
                             str_result = str_result[:-2]
 
                             # Populate the pH value to the self.ezo_sensor_values dictionary
                             self.ezo_sensor_values["pH"] = str_result
+
+                            # Output the sensor value to the terminal
+                            print("pH Value: ", str_result)
 
                             # Execute the run_triggers_actions function
                             self.run_triggers_actions(triggers_actions, "pH", str_result)
