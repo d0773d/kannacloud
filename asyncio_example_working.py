@@ -15,16 +15,32 @@ ezo = Ezo()
 init = Initialize(ezo) # Pass the ezo object to the Initialize class to set the sensor i2c addresses to be used in sensor commands
 nextion = Nextion()
 
-poll_sensor_list = ezo.get_sensor_types_addresses()
-triggers_actions = ezo.get_triggers_and_actions()
+sensor_list = ezo.get_sensor_types_addresses()
+sensors_triggers_actions = ezo.get_triggers_and_actions()
 
 async def poll_sensors():
+    # This code checks to see if the RTD is in front of the list.  If it isn't, then move it to the front of the list
+    # This way the script can run faster and not have to wait for a poll cycle to skip the temp compensated sensors
+    # The poll cycle will now beable to start at the RTD then continue to the rest of the sensors.
+
+    # Check if 'RTD' is in the list and not already at the front
+    if any(sensor['type'] == 'RTD' for sensor in sensor_list) and sensor_list[0]['type'] != 'RTD':
+        # Find the index of the dictionary with 'type' equal to 'RTD'
+        rtd_index = next((index for index, sensor in enumerate(sensor_list) if sensor['type'] == 'RTD'), None)
+        
+        if rtd_index is not None:
+            # Move the dictionary with 'type' equal to 'RTD' to the front
+            sensor_list.insert(0, sensor_list.pop(rtd_index))
+
     while True:
         print("Polling sensors...")
         await asyncio.sleep(1)
-        for device in poll_sensor_list:
+        for device in sensor_list:
             await asyncio.sleep(1)
-            ezo.cmd_r(device["type"], device["address"], triggers_actions)
+
+            #ezo.cmd_r(device["type"], device["address"], triggers_actions)
+            ezo.send_sensor_cmd(device["address"], sensor_type=device["type"], cal_mode=False, triggers_actions=sensors_triggers_actions)
+
             await asyncio.sleep(1)
 
         await asyncio.sleep(1)
@@ -32,7 +48,7 @@ async def poll_sensors():
 async def sensor_calibrate(command_queue):
     while True:
         print("Calibrating sensors...")
-        ezo.send_sensor_cmd(ezo.ezo_sensor_settings["ph_i2c_addr"], "R", cal_mode=False)
+        ezo.send_sensor_cmd(ezo.ezo_sensor_settings["ph_i2c_addr"], sensor_type="pH", cal_mode=True)
         #ezo.send_sensor_cmd(ezo.ezo_sensor_settings["ph_i2c_addr"], "Cal,mid,7.00", cal_mode=True)
         print("Sensor calibration complete.")
         await asyncio.sleep(3)
